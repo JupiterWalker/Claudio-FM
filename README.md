@@ -56,20 +56,27 @@ Create your environment file:
 cp .env.example .env
 ```
 
-Then configure the services you want to use, such as your LLM provider, TTS provider, and music provider settings.
+Then configure the services you want to use, such as your local LLM CLI, TTS provider, and music provider settings.
 
 ### Required Configuration
 
-Claudio uses DeepSeek for DJ planning and Volcengine Doubao Speech for the default DJ voice. Fill these values in `.env`:
+Claudio uses the local Codex CLI for DJ planning, YouTube through `yt-dlp` for music, and Volcengine Doubao Speech for the default DJ voice. Make sure `codex` and `yt-dlp` are available on your `PATH`, then fill these values in `.env`:
 
 ```bash
-DEEPSEEK_API_KEY=your_deepseek_api_key
+brew install yt-dlp
+```
+
+```bash
+LLM_PROVIDER=codex_cli
+CODEX_CLI_COMMAND=codex
+MUSIC_PROVIDER=youtube
 VOLCENGINE_TTS_API_KEY=your_volcengine_tts_api_key
 VOLCENGINE_TTS_RESOURCE_ID=volc.service_type.10029
 VOLCENGINE_TTS_VOICE_TYPE=en_female_nadia_tips_emo_v2_mars_bigtts
+VOLCENGINE_TTS_RESOURCE_ID_ZH=seed-tts-2.0
+VOLCENGINE_TTS_VOICE_TYPE_ZH=zh_male_wennuanahu_uranus_bigtts
 ```
 
-- Get a DeepSeek API key from [DeepSeek API Keys](https://platform.deepseek.com/api_keys).
 - Activate and get the Doubao Speech API key from [Volcengine Speech Settings](https://console.volcengine.com/speech/new/setting/activate?ResourceID=volc.service_type.10029&projectName=default).
 - Doubao Speech currently includes 20,000 free characters for the 1.0 voice model and 20,000 free characters for the 2.0 voice model.
 
@@ -79,11 +86,13 @@ Start Claudio:
 yarn start
 ```
 
-On startup, Claudio checks the local NeteaseCloudMusicApi sidecar. If
-`NETEASE_COOKIE` is not configured and no saved local cookie exists, it creates
-a Netease QR login page at `data/netease/qr-login.html`. Scan it with the
-Netease Cloud Music app to save a local cookie for later runs. The saved cookie
-stays under `data/netease/` and is ignored by Git.
+With the default `MUSIC_PROVIDER=youtube`, Claudio searches YouTube with
+`yt-dlp` and does not start the NeteaseCloudMusicApi sidecar. If you explicitly
+set `MUSIC_PROVIDER=netease` or `MUSIC_PROVIDER=auto`, startup checks the local
+Netease sidecar. If `NETEASE_COOKIE` is not configured and no saved local cookie
+exists, it creates a Netease QR login page at `data/netease/qr-login.html`.
+Scan it with the Netease Cloud Music app to save a local cookie for later runs.
+The saved cookie stays under `data/netease/` and is ignored by Git.
 
 Open:
 
@@ -155,20 +164,27 @@ yarn install
 cp .env.example .env
 ```
 
-然后配置你要使用的 LLM、TTS 和音乐服务。
+然后配置你要使用的本地 LLM CLI、TTS 和音乐服务。
 
 ### 必要配置
 
-Claudio 默认使用 DeepSeek 生成 DJ 节目内容，使用火山引擎豆包语音生成 DJ 声音。请在 `.env` 中填写：
+Claudio 默认使用本地 Codex CLI 生成 DJ 节目内容，通过 `yt-dlp` 从 YouTube 查找音乐，并使用火山引擎豆包语音生成 DJ 声音。请先确认 `codex` 和 `yt-dlp` 在 `PATH` 中可用，然后在 `.env` 中填写：
 
 ```bash
-DEEPSEEK_API_KEY=你的_DeepSeek_API_Key
+brew install yt-dlp
+```
+
+```bash
+LLM_PROVIDER=codex_cli
+CODEX_CLI_COMMAND=codex
+MUSIC_PROVIDER=youtube
 VOLCENGINE_TTS_API_KEY=你的_火山引擎_豆包语音_API_Key
 VOLCENGINE_TTS_RESOURCE_ID=volc.service_type.10029
 VOLCENGINE_TTS_VOICE_TYPE=en_female_nadia_tips_emo_v2_mars_bigtts
+VOLCENGINE_TTS_RESOURCE_ID_ZH=seed-tts-2.0
+VOLCENGINE_TTS_VOICE_TYPE_ZH=zh_male_wennuanahu_uranus_bigtts
 ```
 
-- DeepSeek API Key 获取地址：[DeepSeek API Keys](https://platform.deepseek.com/api_keys)。
 - 豆包语音 API Key 激活与获取地址：[火山引擎语音技术控制台](https://console.volcengine.com/speech/new/setting/activate?ResourceID=volc.service_type.10029&projectName=default)。
 - 豆包语音目前赠送 1.0 语音模型 20,000 字免费用量，以及 2.0 语音模型 20,000 字免费用量。
 
@@ -178,7 +194,9 @@ VOLCENGINE_TTS_VOICE_TYPE=en_female_nadia_tips_emo_v2_mars_bigtts
 yarn start
 ```
 
-启动时，Claudio 会检查本地 NeteaseCloudMusicApi sidecar。如果没有配置
+默认 `MUSIC_PROVIDER=youtube` 时，Claudio 会通过 `yt-dlp` 搜索 YouTube，
+不会启动 NeteaseCloudMusicApi sidecar。如果显式设置 `MUSIC_PROVIDER=netease`
+或 `MUSIC_PROVIDER=auto`，启动时才会检查本地网易云 sidecar。如果没有配置
 `NETEASE_COOKIE`，也没有已保存的本地 cookie，它会生成网易云二维码登录页：
 `data/netease/qr-login.html`。用网易云音乐 App 扫码后，Claudio 会把 cookie
 保存到 `data/netease/`，后续启动自动复用；该目录会被 Git 忽略。

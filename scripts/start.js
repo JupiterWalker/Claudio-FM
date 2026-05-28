@@ -30,6 +30,16 @@ function neteasePort(baseUrl) {
   }
 }
 
+function normalizedMusicProvider() {
+  const value = (process.env.MUSIC_PROVIDER || 'youtube').trim().toLowerCase();
+  if (value === 'yt-dlp' || value === 'ytdlp' || value === 'youtube') return 'youtube';
+  return value;
+}
+
+function shouldUseNetease(provider, required) {
+  return required || provider === 'netease' || provider === 'auto';
+}
+
 function cleanNpmEnv(env) {
   const clean = { ...env };
   for (const key of Object.keys(clean)) {
@@ -168,6 +178,12 @@ async function startNeteaseIfNeeded() {
   const autoStart = boolEnv('NETEASE_AUTO_START', true);
   const required = boolEnv('NETEASE_REQUIRED', false);
   const baseUrl = neteaseBaseUrl();
+  const provider = normalizedMusicProvider();
+
+  if (!shouldUseNetease(provider, required)) {
+    console.log(`[start] Netease sidecar skipped for MUSIC_PROVIDER=${provider}; YouTube/yt-dlp will be used for music.`);
+    return { connected: false, baseUrl, required: false };
+  }
 
   if (!autoStart) {
     console.log('[start] Netease sidecar auto-start disabled; checking existing service.');

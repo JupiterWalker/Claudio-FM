@@ -7,15 +7,19 @@ const CACHE_DIR = path.join(__dirname, 'cache/tts');
 fs.mkdirSync(CACHE_DIR, { recursive: true });
 
 const VOLCENGINE_DEFAULT_ENDPOINT = 'https://openspeech.bytedance.com/api/v3/tts/unidirectional';
+const VOLCENGINE_DEFAULT_ZH_RESOURCE_ID = 'seed-tts-2.0';
+const VOLCENGINE_DEFAULT_ZH_VOICE_TYPE = 'zh_male_wennuanahu_uranus_bigtts';
+const HAN_TEXT_RE = /\p{Script=Han}/u;
 
 function md5(text) {
   return crypto.createHash('md5').update(text).digest('hex');
 }
 
 function cachePath(text, provider = process.env.TTS_PROVIDER || 'volcengine', options = {}) {
-  const voice = getVoiceForProvider(provider, options);
+  const voice = getVoiceForProvider(provider, options, text);
+  const resource = provider === 'volcengine' ? resolveVolcengineOptions(text, options).resourceId : '';
   const role = options.role || 'station';
-  return path.join(CACHE_DIR, `${md5(`${role}:${provider}:${voice}:${text}`)}.mp3`);
+  return path.join(CACHE_DIR, `${md5(`${role}:${provider}:${resource}:${voice}:${text}`)}.mp3`);
 }
 
 function synthesize(text, options = {}) {
@@ -45,14 +49,31 @@ function synthesize(text, options = {}) {
   });
 }
 
-function getVoiceForProvider(provider, options = {}) {
+function getVoiceForProvider(provider, options = {}, text = '') {
   if (provider === 'fish') return options.voiceId || process.env.FISH_VOICE_ID || '';
-  if (provider === 'volcengine') return options.voiceType || process.env.VOLCENGINE_TTS_VOICE_TYPE || '';
+  if (provider === 'volcengine') return resolveVolcengineOptions(text, options).voiceType || '';
   return options.voice || process.env.KOKORO_VOICE || '';
 }
 
+function hasHanText(text) {
+  return HAN_TEXT_RE.test(String(text || ''));
+}
+
+function resolveVolcengineOptions(text, options = {}) {
+  const useChineseVoice = hasHanText(text);
+  const voiceType = options.voiceType ||
+    (useChineseVoice
+      ? process.env.VOLCENGINE_TTS_VOICE_TYPE_ZH || process.env.CALLER_TTS_VOICE_TYPE || VOLCENGINE_DEFAULT_ZH_VOICE_TYPE
+      : process.env.VOLCENGINE_TTS_VOICE_TYPE);
+  const resourceId = options.resourceId ||
+    (useChineseVoice
+      ? process.env.VOLCENGINE_TTS_RESOURCE_ID_ZH || process.env.CALLER_TTS_RESOURCE_ID || VOLCENGINE_DEFAULT_ZH_RESOURCE_ID
+      : process.env.VOLCENGINE_TTS_RESOURCE_ID);
+  return { voiceType, resourceId };
+}
+
 function buildVolcenginePayload(text, options = {}) {
-  const voiceType = options.voiceType || process.env.VOLCENGINE_TTS_VOICE_TYPE;
+  const { voiceType } = resolveVolcengineOptions(text, options);
   if (!voiceType) {
     throw new Error('VOLCENGINE_TTS_VOICE_TYPE not set');
   }
@@ -121,7 +142,7 @@ function extractJsonObjects(text) {
 
 async function synthesizeVolcengine(text, outPath, options = {}) {
   const apiKey = options.apiKey || process.env.VOLCENGINE_TTS_API_KEY;
-  const resourceId = options.resourceId || process.env.VOLCENGINE_TTS_RESOURCE_ID;
+  const { resourceId } = resolveVolcengineOptions(text, options);
 
   if (!apiKey || !resourceId) {
     throw new Error('VOLCENGINE_TTS_API_KEY or VOLCENGINE_TTS_RESOURCE_ID not set');

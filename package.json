@@ -1,9 +1,10 @@
 {
   "name": "claudio-app",
   "version": "1.0.0",
-  "description": "Local AI DJ Radio powered by Claude",
+  "description": "Local AI DJ Radio powered by Codex CLI",
   "main": "server.js",
   "scripts": {
+    "test": "node --test",
     "start": "node scripts/start.js",
     "start:server": "node server.js",
     "netease:check": "node scripts/netease-status.js",
