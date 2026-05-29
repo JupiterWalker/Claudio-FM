@@ -1,7 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const db = new Database(path.join(__dirname, 'claudio.sqlite'));
+const db = new Database(process.env.CLAUDIO_DB_PATH || path.join(__dirname, 'claudio.sqlite'));
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS plays (
@@ -32,8 +32,16 @@ function addPlay({ title, artist, source_url }) {
 
 function recentPlays(limit = 20) {
   return db.prepare(
-    'SELECT title, artist, played_at, source_url FROM plays ORDER BY played_at DESC LIMIT ?'
+    'SELECT title, artist, played_at, source_url FROM plays ORDER BY played_at DESC, id DESC LIMIT ?'
   ).all(limit);
+}
+
+function listPlays({ limit = 20, offset = 0 } = {}) {
+  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+  const safeOffset = Math.max(Number(offset) || 0, 0);
+  return db.prepare(
+    'SELECT id, title, artist, played_at, source_url FROM plays ORDER BY played_at DESC, id DESC LIMIT ? OFFSET ?'
+  ).all(safeLimit, safeOffset);
 }
 
 function addMessage(role, content) {
@@ -60,4 +68,4 @@ function getPref(key) {
   try { return JSON.parse(row.value); } catch { return row.value; }
 }
 
-module.exports = { addPlay, recentPlays, addMessage, recentMessages, setPref, getPref };
+module.exports = { addPlay, recentPlays, listPlays, addMessage, recentMessages, setPref, getPref };

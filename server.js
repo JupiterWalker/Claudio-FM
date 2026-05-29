@@ -10,7 +10,7 @@ const { buildPrompt, buildProgramStartPrompt, buildColdOpenForTracksPrompt, buil
 const { callClaude } = require('./claude');
 const { synthesize } = require('./tts');
 const { getTrack } = require('./music');
-const { addPlay, addMessage, recentPlays, getPref } = require('./state');
+const { addPlay, addMessage, recentPlays, listPlays, getPref } = require('./state');
 const { callerTtsOptions } = require('./caller-tts-options');
 const scheduler = require('./scheduler');
 
@@ -721,6 +721,15 @@ app.post('/api/radio/refill', (req, res) => {
 
 app.get('/api/now', (req, res) => {
   res.json(nowPlaying || { playing: false });
+});
+
+app.get('/api/plays', (req, res) => {
+  res.json({
+    tracks: listPlays({
+      limit: req.query.limit,
+      offset: req.query.offset,
+    }),
+  });
 });
 
 app.get('/api/next', async (req, res) => {
